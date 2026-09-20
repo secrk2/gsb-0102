@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: huitang-mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: huitang
+      MYSQL_USER: huitang
+      MYSQL_PASSWORD: huitang
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "huitang", "-phuitang"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: huitang-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: huitang-backend
+    environment:
+      DATABASE_URL: mysql+pymysql://huitang:huitang@mysql:3306/huitang?charset=utf8mb4
+      REDIS_URL: redis://redis:6379/0
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # 先建表 + 灌种子数据，再起 API；种子脚本幂等
+    command: >
+      sh -c "python -m app.seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: huitang-frontend
+    ports:
+      - "8102:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:

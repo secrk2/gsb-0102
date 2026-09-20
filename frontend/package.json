@@ -1,0 +1,23 @@
+{
+  "name": "huitang-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:geom": "esbuild tests/schedule-geom.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/geom-test.bundle.js && node /tmp/geom-test.bundle.js",
+    "test:components": "vite build --config vite.test.config.mjs >/dev/null && node run-jsdom.mjs",
+    "test": "npm run test:geom && npm run test:components"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/test-utils": "^2.5.1",
+    "jsdom": "^30.1.0",
+    "vite": "^6.0.7"
+  }
+}
